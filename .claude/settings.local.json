@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose up *)",
+      "Bash(docker info *)",
+      "Bash(curl -s http://localhost:5000/api/test-db)",
+      "Bash(curl -s http://localhost:8080/api/categories/)",
+      "Bash(curl -s http://localhost:8080/api/medicines)",
+      "Bash(tasklist)",
+      "Bash(findstr node *)",
+      "Bash(taskkill /F /IM node.exe)"
+    ]
+  }
+}

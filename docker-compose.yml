@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (if you want to run it via Docker)
+  postgres:
+    image: postgres:15-alpine
+    container_name: pharmacy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pharmacy_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Category Service (extracted microservice)
+  category-service:
+    build:
+      context: ./pharmacy-category-service
+      dockerfile: Dockerfile
+    container_name: pharmacy-category-service
+    restart: unless-stopped
+    env_file:
+      - ./pharmacy-category-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  # Monolith Backend (during transition - proxies to category service)
+  pharmacy-backend:
+    build:
+      context: ./vue-project/pharmacy-backend
+      dockerfile: Dockerfile
+    container_name: pharmacy-backend
+    restart: unless-stopped
+    env_file:
+      - ./vue-project/pharmacy-backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      category-service:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/test-db"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  # Vue.js Frontend
+  frontend:
+    build:
+      context: ./vue-project
+      dockerfile: Dockerfile.frontend
+    container_name: pharmacy-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000
+    depends_on:
+      - pharmacy-backend
+
+  # NGINX API Gateway (optional, for production-style routing)
+  api-gateway:
+    image: nginx:alpine
+    container_name: pharmacy-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - pharmacy-backend
+      - category-service
+
+volumes:
+  postgres_data:
