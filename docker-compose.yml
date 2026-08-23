@@ -1,68 +1,117 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database (if you want to run it via Docker)
+  # ---------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
     container_name: pharmacy-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: pharmacy_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123123
+      POSTGRES_DB: ${DB_NAME:-pharmacy_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123123}
     ports:
-      - "5432:5432"
+      - "${DB_PORT_HOST:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pharmacy-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-pharmacy_db}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
+  # ---------------------------------------------------------------------
+  # One-shot schema/seed job (creates tables before the services boot)
+  # ---------------------------------------------------------------------
+  db-init:
+    build:
+      context: ./vue-project/pharmacy-backend
+      dockerfile: Dockerfile
+    container_name: pharmacy-db-init
+    restart: "no"
+    command: ["node", "init-db.js"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-123123}
+      DB_NAME: ${DB_NAME:-pharmacy_db}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pharmacy-net
+
+  # ---------------------------------------------------------------------
   # Category Service (extracted microservice)
+  # ---------------------------------------------------------------------
   category-service:
     build:
       context: ./pharmacy-category-service
       dockerfile: Dockerfile
     container_name: pharmacy-category-service
     restart: unless-stopped
-    env_file:
-      - ./pharmacy-category-service/.env
+    environment:
+      PORT: 5001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-123123}
+      DB_NAME: ${DB_NAME:-pharmacy_db}
     depends_on:
       postgres:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "5001:5001"
+    networks:
+      - pharmacy-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:5001/health || exit 1"]
       interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 20s
 
-  # Monolith Backend (during transition - proxies to category service)
+  # ---------------------------------------------------------------------
+  # Monolith Backend
+  # ---------------------------------------------------------------------
   pharmacy-backend:
     build:
       context: ./vue-project/pharmacy-backend
       dockerfile: Dockerfile
     container_name: pharmacy-backend
     restart: unless-stopped
-    env_file:
-      - ./vue-project/pharmacy-backend/.env
+    environment:
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-123123}
+      DB_NAME: ${DB_NAME:-pharmacy_db}
     depends_on:
       postgres:
         condition: service_healthy
-      category-service:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     ports:
       - "5000:5000"
+    networks:
+      - pharmacy-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/test-db"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:5000/api/test-db || exit 1"]
       interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 20s
 
-  # Vue.js Frontend
+  # ---------------------------------------------------------------------
+  # Vue.js Frontend (built assets served by NGINX, /api proxied internally)
+  # ---------------------------------------------------------------------
   frontend:
     build:
       context: ./vue-project
@@ -70,13 +119,23 @@ services:
     container_name: pharmacy-frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:5000
+      - "5173:80"
+    networks:
+      - pharmacy-net
     depends_on:
-      - pharmacy-backend
+      pharmacy-backend:
+        condition: service_started
+      category-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # NGINX API Gateway (optional, for production-style routing)
+  # ---------------------------------------------------------------------
+  # NGINX API Gateway (production-style routing)
+  # ---------------------------------------------------------------------
   api-gateway:
     image: nginx:alpine
     container_name: pharmacy-api-gateway
@@ -85,9 +144,16 @@ services:
       - "8080:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - pharmacy-net
     depends_on:
       - pharmacy-backend
       - category-service
+      - frontend
+
+networks:
+  pharmacy-net:
+    driver: bridge
 
 volumes:
   postgres_data:
