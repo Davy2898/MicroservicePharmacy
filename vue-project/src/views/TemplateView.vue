@@ -105,20 +105,34 @@
         </div>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="Boolean(templateToDelete)"
+      :busy="deleting"
+      title="Delete template?"
+      message="This template will be permanently removed from the database."
+      item-label="Template"
+      :item-name="templateToDelete?.name"
+      @cancel="templateToDelete = null"
+      @confirm="confirmDeleteTemplate"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const templates = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
 const editingTemplate = ref(null)
+const templateToDelete = ref(null)
 
 const form = reactive({
   no: '',
@@ -222,17 +236,25 @@ const saveTemplate = async () => {
   }
 }
 
-const deleteTemplate = async (template) => {
-  if (!window.confirm(`Delete ${template.name}?`)) return
+const deleteTemplate = (template) => {
+  templateToDelete.value = template
+}
 
+const confirmDeleteTemplate = async () => {
+  if (!templateToDelete.value) return
+
+  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/templates/${template.id}`)
+    await axios.delete(`/api/templates/${templateToDelete.value.id}`)
+    templateToDelete.value = null
     await fetchTemplates()
   } catch (err) {
     console.error('Error deleting template:', err)
     error.value = getErrorMessage(err, 'Cannot delete template')
+  } finally {
+    deleting.value = false
   }
 }
 

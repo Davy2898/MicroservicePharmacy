@@ -82,20 +82,34 @@
         </div>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="Boolean(categoryToDelete)"
+      :busy="deleting"
+      title="Delete category?"
+      message="This category will be permanently removed from the database."
+      item-label="Category"
+      :item-name="categoryToDelete?.name"
+      @cancel="categoryToDelete = null"
+      @confirm="confirmDeleteCategory"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const categories = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
 const editingCategory = ref(null)
+const categoryToDelete = ref(null)
 
 const form = reactive({
   name: '',
@@ -191,21 +205,25 @@ const saveCategory = async () => {
   }
 }
 
-const deleteCategory = async (category) => {
-  const confirmed = window.confirm(`Delete ${category.name}?`)
+const deleteCategory = (category) => {
+  categoryToDelete.value = category
+}
 
-  if (!confirmed) {
-    return
-  }
+const confirmDeleteCategory = async () => {
+  if (!categoryToDelete.value) return
 
+  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/categories/${category.id}`)
+    await axios.delete(`/api/categories/${categoryToDelete.value.id}`)
+    categoryToDelete.value = null
     await fetchCategories()
   } catch (err) {
     console.error('Error deleting category:', err)
     error.value = getErrorMessage(err, 'Cannot delete category')
+  } finally {
+    deleting.value = false
   }
 }
 

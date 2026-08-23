@@ -4,9 +4,9 @@ npm-debug.log*
 .env
 .env.*
 .git
-.gitignore
-Dockerfile*
-.dockerignore
-pharmacy-backend
 .vscode
-*.md
+*.log
+yarn-debug.log*
+pnpm-debug.log*
+coverage
+__screenshots__

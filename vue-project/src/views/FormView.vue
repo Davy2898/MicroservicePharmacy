@@ -77,20 +77,34 @@
         </div>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="Boolean(formToDelete)"
+      :busy="deleting"
+      title="Delete form?"
+      message="This form will be permanently removed from the database."
+      item-label="Form"
+      :item-name="formToDelete?.name"
+      @cancel="formToDelete = null"
+      @confirm="confirmDeleteForm"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const forms = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
 const editingForm = ref(null)
+const formToDelete = ref(null)
 
 const form = reactive({
   name: '',
@@ -178,17 +192,25 @@ const saveForm = async () => {
   }
 }
 
-const deleteForm = async (formItem) => {
-  if (!window.confirm(`Delete ${formItem.name}?`)) return
+const deleteForm = (formItem) => {
+  formToDelete.value = formItem
+}
 
+const confirmDeleteForm = async () => {
+  if (!formToDelete.value) return
+
+  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/forms/${formItem.id}`)
+    await axios.delete(`/api/forms/${formToDelete.value.id}`)
+    formToDelete.value = null
     await fetchForms()
   } catch (err) {
     console.error('Error deleting form:', err)
     error.value = getErrorMessage(err, 'Cannot delete form')
+  } finally {
+    deleting.value = false
   }
 }
 

@@ -145,7 +145,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  font-size: 16px;
+  font-size: 13px;
   color: var(--sidebar-text);
   border-radius: var(--sidebar-radius);
   text-decoration: none;

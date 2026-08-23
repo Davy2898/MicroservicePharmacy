@@ -46,6 +46,10 @@
   </aside>
 </template>
 
+<script setup>
+import Sidebar from './Sidebar.vue'
+</script>
+
 <style scoped>
 :root {
   --sidebar-bg: #ffffff;

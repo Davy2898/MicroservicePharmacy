@@ -68,15 +68,53 @@
           <button class="close-btn" type="button" aria-label="Close" @click="closeForms">x</button>
         </div>
 
-        <label class="form-field">
+        <div v-if="selectedInventoryItem" class="selected-medicine">
+          <strong>{{ selectedInventoryItem.name }}</strong>
+          <span>{{ selectedInventoryItem.barcode }}</span>
+        </div>
+
+        <div v-else class="form-field medicine-field">
           <span>Medicine</span>
-          <select v-model="stockForm.medicineId" :disabled="Boolean(selectedInventoryItem)" required>
-            <option value="" disabled>Select medicine</option>
-            <option v-for="medicine in medicines" :key="medicine.id" :value="medicine.id">
-              {{ medicine.name }} - {{ medicine.barcode }}
-            </option>
-          </select>
-        </label>
+          <div class="medicine-picker">
+            <button
+              class="medicine-trigger"
+              type="button"
+              :class="{ placeholder: !selectedStockMedicine }"
+              @click="toggleMedicinePicker"
+            >
+              <span>{{ selectedStockMedicine ? medicineDisplayName(selectedStockMedicine) : 'Select medicine' }}</span>
+              <span class="picker-chevron" aria-hidden="true">v</span>
+            </button>
+
+            <div v-if="medicinePickerOpen" class="medicine-menu">
+              <input
+                v-model="medicineSearch"
+                class="medicine-search"
+                type="search"
+                placeholder="Search medicine or barcode"
+                @keydown.esc.prevent="medicinePickerOpen = false"
+              />
+
+              <div class="medicine-options">
+                <button
+                  v-for="medicine in filteredStockMedicines"
+                  :key="medicine.id"
+                  class="medicine-option"
+                  type="button"
+                  :class="{ active: String(stockForm.medicineId) === String(medicine.id) }"
+                  @click="selectStockMedicine(medicine)"
+                >
+                  <strong>{{ medicine.name }}</strong>
+                  <span>{{ medicine.barcode }}</span>
+                </button>
+
+                <div v-if="filteredStockMedicines.length === 0" class="medicine-empty">
+                  No medicine found
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <label class="form-field">
           <span>Quantity To Add</span>
@@ -153,6 +191,8 @@ const searchTerm = ref('')
 const showStockForm = ref(false)
 const showAdjustForm = ref(false)
 const selectedInventoryItem = ref(null)
+const medicinePickerOpen = ref(false)
+const medicineSearch = ref('')
 
 const stockForm = reactive({
   medicineId: '',
@@ -181,6 +221,23 @@ const filteredInventory = computed(() => {
   })
 })
 
+const selectedStockMedicine = computed(() => {
+  return medicines.value.find((medicine) => String(medicine.id) === String(stockForm.medicineId))
+})
+
+const filteredStockMedicines = computed(() => {
+  const query = medicineSearch.value.trim().toLowerCase()
+  const source = query
+    ? medicines.value.filter((medicine) =>
+        [medicine.name, medicine.barcode, medicine.uom].some((value) =>
+          String(value || '').toLowerCase().includes(query)
+        )
+      )
+    : medicines.value
+
+  return source.slice(0, 80)
+})
+
 const getErrorMessage = (err, fallback) => {
   return err.response?.data?.error || fallback
 }
@@ -201,6 +258,20 @@ const formatQty = (value) => {
   }
 
   return Number.isInteger(numberValue) ? numberValue : numberValue.toFixed(2)
+}
+
+const medicineDisplayName = (medicine) => {
+  return `${medicine.name} - ${medicine.barcode}`
+}
+
+const toggleMedicinePicker = () => {
+  medicinePickerOpen.value = !medicinePickerOpen.value
+}
+
+const selectStockMedicine = (medicine) => {
+  stockForm.medicineId = medicine.id
+  medicineSearch.value = ''
+  medicinePickerOpen.value = false
 }
 
 const fetchInventory = async () => {
@@ -232,6 +303,8 @@ const resetStockForm = () => {
   stockForm.quantity = 1
   stockForm.stockUnit = ''
   stockForm.expiryDate = ''
+  medicineSearch.value = ''
+  medicinePickerOpen.value = false
 }
 
 const resetAdjustForm = () => {
@@ -267,11 +340,17 @@ const closeForms = () => {
   showStockForm.value = false
   showAdjustForm.value = false
   selectedInventoryItem.value = null
+  medicinePickerOpen.value = false
   resetStockForm()
   resetAdjustForm()
 }
 
 const saveStockIn = async () => {
+  if (!stockForm.medicineId) {
+    error.value = 'Please select a medicine'
+    return
+  }
+
   saving.value = true
   error.value = ''
 
@@ -571,6 +650,132 @@ onMounted(loadPageData)
 .form-field select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.medicine-field {
+  position: relative;
+}
+
+.medicine-picker {
+  position: relative;
+}
+
+.medicine-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 0 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.medicine-trigger span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medicine-trigger.placeholder {
+  color: #64748b;
+}
+
+.medicine-trigger:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.picker-chevron {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.medicine-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 70;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18);
+}
+
+.medicine-search {
+  width: calc(100% - 20px);
+  height: 38px;
+  margin: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+}
+
+.medicine-search:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.medicine-options {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.medicine-option {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.medicine-option:hover,
+.medicine-option.active {
+  background: #eff6ff;
+}
+
+.medicine-option strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.medicine-option span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.medicine-empty {
+  padding: 18px 10px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .selected-medicine {

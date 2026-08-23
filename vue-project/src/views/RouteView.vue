@@ -77,20 +77,34 @@
         </div>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="Boolean(routeToDelete)"
+      :busy="deleting"
+      title="Delete route?"
+      message="This route will be permanently removed from the database."
+      item-label="Route"
+      :item-name="routeToDelete?.name"
+      @cancel="routeToDelete = null"
+      @confirm="confirmDeleteRoute"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const routes = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
 const editingRoute = ref(null)
+const routeToDelete = ref(null)
 
 const form = reactive({
   name: '',
@@ -178,17 +192,25 @@ const saveRoute = async () => {
   }
 }
 
-const deleteRoute = async (route) => {
-  if (!window.confirm(`Delete ${route.name}?`)) return
+const deleteRoute = (route) => {
+  routeToDelete.value = route
+}
 
+const confirmDeleteRoute = async () => {
+  if (!routeToDelete.value) return
+
+  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/routes/${route.id}`)
+    await axios.delete(`/api/routes/${routeToDelete.value.id}`)
+    routeToDelete.value = null
     await fetchRoutes()
   } catch (err) {
     console.error('Error deleting route:', err)
     error.value = getErrorMessage(err, 'Cannot delete route')
+  } finally {
+    deleting.value = false
   }
 }
 

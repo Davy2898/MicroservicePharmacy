@@ -82,20 +82,34 @@
         </div>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="Boolean(medicineToDelete)"
+      :busy="deleting"
+      title="Delete medicine?"
+      message="This medicine will be permanently removed from the database."
+      item-label="Medicine"
+      :item-name="medicineToDelete?.name"
+      @cancel="medicineToDelete = null"
+      @confirm="confirmDeleteMedicine"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const medicines = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
 const editingMedicine = ref(null)
+const medicineToDelete = ref(null)
 
 const form = reactive({
   barcode: '',
@@ -191,21 +205,25 @@ const saveMedicine = async () => {
   }
 }
 
-const deleteMedicine = async (medicine) => {
-  const confirmed = window.confirm(`Delete ${medicine.name}?`)
+const deleteMedicine = (medicine) => {
+  medicineToDelete.value = medicine
+}
 
-  if (!confirmed) {
-    return
-  }
+const confirmDeleteMedicine = async () => {
+  if (!medicineToDelete.value) return
 
+  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/medicines/${medicine.id}`)
+    await axios.delete(`/api/medicines/${medicineToDelete.value.id}`)
+    medicineToDelete.value = null
     await fetchMedicines()
   } catch (err) {
     console.error('Error deleting medicine:', err)
     error.value = getErrorMessage(err, 'Cannot delete medicine')
+  } finally {
+    deleting.value = false
   }
 }
 

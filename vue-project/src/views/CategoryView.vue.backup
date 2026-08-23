@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Unit Management</h2>
-        <p class="page-subtitle">{{ units.length }} units in database</p>
+        <h2>Category Management</h2>
+        <p class="page-subtitle">{{ categories.length }} categories in database</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Unit</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Category</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search unit"
+        placeholder="Search category"
       />
-      <button class="btn btn-secondary" type="button" @click="fetchUnits">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="fetchCategories">Refresh</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,35 +24,27 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Unit</th>
-            <th class="code-col">Code</th>
+            <th>Name</th>
             <th>Description</th>
-            <th class="default-col">Default</th>
             <th class="order-col">Order</th>
             <th class="action-col">Action</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="empty-cell">Loading units...</td>
+            <td colspan="4" class="empty-cell">Loading categories...</td>
           </tr>
-          <tr v-else-if="filteredUnits.length === 0">
-            <td colspan="6" class="empty-cell">No units found</td>
+          <tr v-else-if="filteredCategories.length === 0">
+            <td colspan="4" class="empty-cell">No categories found</td>
           </tr>
           <template v-else>
-            <tr v-for="unit in filteredUnits" :key="unit.id">
-              <td class="text-bold">{{ unit.name }}</td>
-              <td><code>{{ unit.code }}</code></td>
-              <td class="text-muted">{{ unit.description || '-' }}</td>
-              <td>
-                <span class="default-badge" :class="{ active: unit.is_default }">
-                  {{ unit.is_default ? 'Yes' : 'No' }}
-                </span>
-              </td>
-              <td>{{ unit.order }}</td>
+            <tr v-for="cat in filteredCategories" :key="cat.id">
+              <td class="text-bold">{{ cat.name }}</td>
+              <td class="text-muted">{{ cat.description || '-' }}</td>
+              <td>{{ cat.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(unit)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteUnit(unit)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(cat)">Edit</button>
+                <button class="icon-btn danger" type="button" @click="deleteCategory(cat)">Delete</button>
               </td>
             </tr>
           </template>
@@ -61,20 +53,15 @@
     </div>
 
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
-      <form class="modal-panel" @submit.prevent="saveUnit">
+      <form class="modal-panel" @submit.prevent="saveCategory">
         <div class="modal-header">
-          <h3>{{ editingUnit ? 'Edit Unit' : 'Add Unit' }}</h3>
+          <h3>{{ editingCategory ? 'Edit Category' : 'Add Category' }}</h3>
           <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Unit Name</span>
+          <span>Name</span>
           <input v-model.trim="form.name" type="text" required />
-        </label>
-
-        <label class="form-field">
-          <span>Code</span>
-          <input v-model.trim="form.code" type="text" required />
         </label>
 
         <label class="form-field">
@@ -87,11 +74,6 @@
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
-        <label class="checkbox-field">
-          <input v-model="form.isDefault" type="checkbox" />
-          <span>Default unit</span>
-        </label>
-
         <div class="modal-actions">
           <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
@@ -100,52 +82,36 @@
         </div>
       </form>
     </div>
-
-    <ConfirmDialog
-      :open="Boolean(unitToDelete)"
-      :busy="deleting"
-      title="Delete unit?"
-      message="This unit will be permanently removed from the database."
-      item-label="Unit"
-      :item-name="unitToDelete?.name"
-      @cancel="unitToDelete = null"
-      @confirm="confirmDeleteUnit"
-    />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
-const units = ref([])
+const categories = ref([])
 const loading = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const showForm = ref(false)
-const editingUnit = ref(null)
-const unitToDelete = ref(null)
+const editingCategory = ref(null)
 
 const form = reactive({
   name: '',
-  code: '',
   description: '',
-  isDefault: false,
   order: 0
 })
 
-const filteredUnits = computed(() => {
+const filteredCategories = computed(() => {
   const query = searchTerm.value.trim().toLowerCase()
 
   if (!query) {
-    return units.value
+    return categories.value
   }
 
-  return units.value.filter((unit) => {
-    return [unit.name, unit.code, unit.description, unit.order].some((value) =>
+  return categories.value.filter((category) => {
+    return [category.name, category.description, category.order].some((value) =>
       String(value || '').toLowerCase().includes(query)
     )
   })
@@ -155,16 +121,16 @@ const getErrorMessage = (err, fallback) => {
   return err.response?.data?.error || fallback
 }
 
-const fetchUnits = async () => {
+const fetchCategories = async () => {
   loading.value = true
   error.value = ''
 
   try {
-    const response = await axios.get('/api/units')
-    units.value = response.data
+    const response = await axios.get('/api/categories')
+    categories.value = response.data
   } catch (err) {
-    console.error('Error fetching units:', err)
-    error.value = getErrorMessage(err, 'Cannot load units from database')
+    console.error('Error fetching categories:', err)
+    error.value = getErrorMessage(err, 'Cannot load categories from database')
   } finally {
     loading.value = false
   }
@@ -172,88 +138,78 @@ const fetchUnits = async () => {
 
 const resetForm = () => {
   form.name = ''
-  form.code = ''
   form.description = ''
-  form.isDefault = false
-  form.order = units.value.length + 1
+  form.order = categories.value.length + 1
 }
 
 const openCreateForm = () => {
-  editingUnit.value = null
+  editingCategory.value = null
   resetForm()
   error.value = ''
   showForm.value = true
 }
 
-const openEditForm = (unit) => {
-  editingUnit.value = unit
-  form.name = unit.name || ''
-  form.code = unit.code || ''
-  form.description = unit.description || ''
-  form.isDefault = Boolean(unit.is_default)
-  form.order = unit.order || 0
+const openEditForm = (category) => {
+  editingCategory.value = category
+  form.name = category.name || ''
+  form.description = category.description || ''
+  form.order = category.order || 0
   error.value = ''
   showForm.value = true
 }
 
 const closeForm = () => {
   showForm.value = false
-  editingUnit.value = null
+  editingCategory.value = null
   resetForm()
 }
 
-const saveUnit = async () => {
+const saveCategory = async () => {
   saving.value = true
   error.value = ''
 
   try {
     const payload = {
       name: form.name,
-      code: form.code,
       description: form.description,
-      isDefault: form.isDefault,
       order: form.order
     }
 
-    if (editingUnit.value) {
-      await axios.put(`/api/units/${editingUnit.value.id}`, payload)
+    if (editingCategory.value) {
+      await axios.put(`/api/categories/${editingCategory.value.id}`, payload)
     } else {
-      await axios.post('/api/units', payload)
+      await axios.post('/api/categories', payload)
     }
 
     closeForm()
-    await fetchUnits()
+    await fetchCategories()
   } catch (err) {
-    console.error('Error saving unit:', err)
-    error.value = getErrorMessage(err, 'Cannot save unit')
+    console.error('Error saving category:', err)
+    error.value = getErrorMessage(err, 'Cannot save category')
   } finally {
     saving.value = false
   }
 }
 
-const deleteUnit = (unit) => {
-  unitToDelete.value = unit
-}
+const deleteCategory = async (category) => {
+  const confirmed = window.confirm(`Delete ${category.name}?`)
 
-const confirmDeleteUnit = async () => {
-  if (!unitToDelete.value) return
+  if (!confirmed) {
+    return
+  }
 
-  deleting.value = true
   error.value = ''
 
   try {
-    await axios.delete(`/api/units/${unitToDelete.value.id}`)
-    unitToDelete.value = null
-    await fetchUnits()
+    await axios.delete(`/api/categories/${category.id}`)
+    await fetchCategories()
   } catch (err) {
-    console.error('Error deleting unit:', err)
-    error.value = getErrorMessage(err, 'Cannot delete unit')
-  } finally {
-    deleting.value = false
+    console.error('Error deleting category:', err)
+    error.value = getErrorMessage(err, 'Cannot delete category')
   }
 }
 
-onMounted(fetchUnits)
+onMounted(fetchCategories)
 </script>
 
 <style scoped>
@@ -369,13 +325,8 @@ onMounted(fetchUnits)
   text-transform: uppercase;
 }
 
-.code-col {
-  width: 150px;
-}
-
-.default-col,
 .order-col {
-  width: 110px;
+  width: 120px;
 }
 
 .action-col {
@@ -390,23 +341,6 @@ onMounted(fetchUnits)
 
 .text-muted {
   color: #64748b;
-}
-
-.default-badge {
-  display: inline-flex;
-  min-width: 42px;
-  justify-content: center;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.default-badge.active {
-  background: #dcfce7;
-  color: #15803d;
 }
 
 .action-cell {
@@ -504,20 +438,6 @@ onMounted(fetchUnits)
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-.checkbox-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.checkbox-field input {
-  width: 16px;
-  height: 16px;
-}
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -525,7 +445,7 @@ onMounted(fetchUnits)
   margin-top: 20px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 720px) {
   .header-actions,
   .toolbar {
     align-items: stretch;
@@ -538,7 +458,7 @@ onMounted(fetchUnits)
   }
 
   .data-table {
-    min-width: 780px;
+    min-width: 680px;
   }
 
   .table-card {

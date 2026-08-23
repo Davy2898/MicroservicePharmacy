@@ -1,17 +1,17 @@
 const { Pool } = require('pg')
 require('dotenv').config()
 
-const databaseName = process.env.DB_NAME
+const databaseName = process.env.DB_NAME || 'pharmacy_db'
 
 if (!databaseName || !/^[a-zA-Z0-9_]+$/.test(databaseName)) {
   throw new Error('DB_NAME must contain only letters, numbers, and underscores')
 }
 
 const baseConfig = {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 5432),
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || '123123'
 }
 
 const createDatabase = async () => {

@@ -2,8 +2,9 @@ node_modules
 npm-debug.log*
 .env
 .env.*
-Dockerfile
-.dockerignore
 .git
-.gitignore
-*.md
+*.log
+yarn-debug.log*
+pnpm-debug.log*
+.vscode
+coverage
