@@ -41,18 +41,41 @@
 ## How to Run:
 
 ```bash
-# Start all services (PostgreSQL, backend, category service, frontend, gateway)
-docker-compose up -d
+# Start all services (PostgreSQL, schema init, backend, category service, frontend, gateway)
+docker compose up -d --build
 
 # Access points:
 # Frontend: http://localhost:5173
-# API Gateway: http://localhost:8080/api/*
+# API Gateway: http://localhost:8080  (SPA + /api/*)
 # Direct Backend: http://localhost:5000/api/*
-# Direct Category Service: http://localhost:5001/
+# Direct Category Service: http://localhost:5001/api/categories
+# Category health: http://localhost:5001/health
 
 # Stop and clean up:
-docker-compose down
+docker compose down        # keep data
+docker compose down -v     # also drop the postgres volume
 ```
+
+See [DOCKER.md](./DOCKER.md) for the full container guide and troubleshooting.
+
+## Docker Setup Fixes (applied)
+
+The original compose stack could not actually run. The following was corrected:
+
+| Problem | Fix |
+| --- | --- |
+| Services read `DB_HOST=localhost` from `.env`, which points at the container itself | Compose now injects `DB_HOST=postgres`; `.env` files are excluded from the images via `.dockerignore` |
+| Empty database — no tables created | Added one-shot `db-init` service running `init-db.js`, gated with `service_completed_successfully` |
+| Health checks used `curl`, absent from `node:*-alpine` | Switched to busybox `wget` |
+| Frontend image served NGINX on port 80 but compose published `5173:5173` | Published `5173:80` |
+| Frontend served static files with no API route — `/api/*` calls 404'd | Added `vue-project/nginx.frontend.conf` proxying `/api/categories` → category-service and `/api/*` → backend |
+| Gateway `proxy_pass http://upstream/` stripped the `/api` prefix, so every route 404'd | Removed trailing slashes so paths pass through unchanged |
+| Gateway served an empty `/usr/share/nginx/html` | Gateway now proxies `/` to the frontend container |
+| Circular/incorrect `depends_on` (backend waited on category-service) | Dependencies now flow postgres → db-init → services |
+| `node:20-alpine` violated the frontend's `engines` (Vite 8 needs Node 22+) | All images use `node:22-alpine` |
+| `npm ci --only=production` (deprecated) | `npm ci --omit=dev` |
+| No `.dockerignore` — local `node_modules` copied into images | Added `.dockerignore` for all three build contexts |
+| No shared network, obsolete `version:` key | Added `pharmacy-net` bridge network, removed `version:` |
 
 ## Next Steps:
 1. Test the category service extraction
