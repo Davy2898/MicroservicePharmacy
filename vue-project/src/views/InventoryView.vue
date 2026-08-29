@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Inventory & Stock Control</h2>
-        <p class="page-subtitle">{{ inventory.length }} stocked medicines</p>
+        <h2>{{ t('inventory.title') }}</h2>
+        <p class="page-subtitle">{{ t('inventory.subtitle', { count: inventory.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openStockInForm()">+ Stock In</button>
+      <button class="btn btn-primary" type="button" @click="openStockInForm()">{{ t('inventory.stockIn') }}</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search by name or barcode"
+        :placeholder="t('inventory.search')"
       />
-      <button class="btn btn-secondary" type="button" @click="loadPageData">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="loadPageData">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,20 +24,20 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Barcode</th>
-            <th>Medicine Name</th>
-            <th>Stock Qty</th>
-            <th>Expiry Date</th>
-            <th>Expiry Status</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('common.barcode') }}</th>
+            <th>{{ t('inventory.medicineName') }}</th>
+            <th>{{ t('inventory.stockQty') }}</th>
+            <th>{{ t('inventory.expiryDate') }}</th>
+            <th>{{ t('inventory.expiryStatus') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="empty-cell">Loading inventory...</td>
+            <td colspan="6" class="empty-cell">{{ t('inventory.loading') }}</td>
           </tr>
           <tr v-else-if="filteredInventory.length === 0">
-            <td colspan="6" class="empty-cell">No stock records found</td>
+            <td colspan="6" class="empty-cell">{{ t('inventory.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="item in filteredInventory" :key="item.id">
@@ -49,11 +49,11 @@
               </td>
               <td>{{ formatDate(item.expiry_date) }}</td>
               <td>
-                <span class="status-badge" :class="item.status_class">{{ item.status }}</span>
+                <span class="status-badge" :class="item.status_class">{{ translateStatus(item.status) }}</span>
               </td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openStockInForm(item)">Restock</button>
-                <button class="icon-btn" type="button" @click="openAdjustForm(item)">Adjust</button>
+                <button class="icon-btn" type="button" @click="openStockInForm(item)">{{ t('inventory.restock') }}</button>
+                <button class="icon-btn" type="button" @click="openAdjustForm(item)">{{ t('inventory.adjust') }}</button>
               </td>
             </tr>
           </template>
@@ -64,8 +64,8 @@
     <div v-if="showStockForm" class="modal-backdrop" @click.self="closeForms">
       <form class="modal-panel" @submit.prevent="saveStockIn">
         <div class="modal-header">
-          <h3>Stock In</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForms">x</button>
+          <h3>{{ t('inventory.stockInTitle') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForms">x</button>
         </div>
 
         <div v-if="selectedInventoryItem" class="selected-medicine">
@@ -74,7 +74,7 @@
         </div>
 
         <div v-else class="form-field medicine-field">
-          <span>Medicine</span>
+          <span>{{ t('inventory.medicine') }}</span>
           <div class="medicine-picker">
             <button
               class="medicine-trigger"
@@ -82,7 +82,7 @@
               :class="{ placeholder: !selectedStockMedicine }"
               @click="toggleMedicinePicker"
             >
-              <span>{{ selectedStockMedicine ? medicineDisplayName(selectedStockMedicine) : 'Select medicine' }}</span>
+              <span>{{ selectedStockMedicine ? medicineDisplayName(selectedStockMedicine) : t('inventory.selectMedicine') }}</span>
               <span class="picker-chevron" aria-hidden="true">v</span>
             </button>
 
@@ -91,7 +91,7 @@
                 v-model="medicineSearch"
                 class="medicine-search"
                 type="search"
-                placeholder="Search medicine or barcode"
+                :placeholder="t('inventory.searchMedicine')"
                 @keydown.esc.prevent="medicinePickerOpen = false"
               />
 
@@ -109,7 +109,7 @@
                 </button>
 
                 <div v-if="filteredStockMedicines.length === 0" class="medicine-empty">
-                  No medicine found
+                  {{ t('inventory.noMedicine') }}
                 </div>
               </div>
             </div>
@@ -117,24 +117,24 @@
         </div>
 
         <label class="form-field">
-          <span>Quantity To Add</span>
+          <span>{{ t('inventory.quantityToAdd') }}</span>
           <input v-model.number="stockForm.quantity" type="number" min="0.01" step="0.01" required />
         </label>
 
         <label class="form-field">
-          <span>Stock Unit</span>
+          <span>{{ t('inventory.stockUnit') }}</span>
           <input v-model.trim="stockForm.stockUnit" type="text" placeholder="PCS, គ្រាប់, mg..." />
         </label>
 
         <label class="form-field">
-          <span>Expiry Date</span>
+          <span>{{ t('inventory.expiryDate') }}</span>
           <input v-model="stockForm.expiryDate" type="date" />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForms">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForms">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save Stock' }}
+            {{ saving ? t('common.saving') : t('inventory.saveStock') }}
           </button>
         </div>
       </form>
@@ -143,8 +143,8 @@
     <div v-if="showAdjustForm" class="modal-backdrop" @click.self="closeForms">
       <form class="modal-panel" @submit.prevent="saveAdjustment">
         <div class="modal-header">
-          <h3>Adjust Stock</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForms">x</button>
+          <h3>{{ t('inventory.adjustTitle') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForms">x</button>
         </div>
 
         <div class="selected-medicine">
@@ -153,24 +153,24 @@
         </div>
 
         <label class="form-field">
-          <span>Current Stock Qty</span>
+          <span>{{ t('inventory.currentStockQty') }}</span>
           <input v-model.number="adjustForm.stockQty" type="number" step="0.01" required />
         </label>
 
         <label class="form-field">
-          <span>Stock Unit</span>
+          <span>{{ t('inventory.stockUnit') }}</span>
           <input v-model.trim="adjustForm.stockUnit" type="text" placeholder="PCS, គ្រាប់, mg..." />
         </label>
 
         <label class="form-field">
-          <span>Expiry Date</span>
+          <span>{{ t('inventory.expiryDate') }}</span>
           <input v-model="adjustForm.expiryDate" type="date" />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForms">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForms">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Update Stock' }}
+            {{ saving ? t('common.saving') : t('inventory.updateStock') }}
           </button>
         </div>
       </form>
@@ -181,6 +181,9 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const inventory = ref([])
 const medicines = ref([])
@@ -260,6 +263,17 @@ const formatQty = (value) => {
   return Number.isInteger(numberValue) ? numberValue : numberValue.toFixed(2)
 }
 
+const translateStatus = (status) => {
+  const statusKey = {
+    Normal: 'normal',
+    'Near Expiry': 'nearExpiry',
+    Expired: 'expired',
+    'Out of Stock': 'outOfStock'
+  }[status]
+
+  return statusKey ? t(`inventory.status.${statusKey}`) : status
+}
+
 const medicineDisplayName = (medicine) => {
   return `${medicine.name} - ${medicine.barcode}`
 }
@@ -292,7 +306,7 @@ const loadPageData = async () => {
     await Promise.all([fetchInventory(), fetchMedicines()])
   } catch (err) {
     console.error('Error loading inventory:', err)
-    error.value = getErrorMessage(err, 'Cannot load inventory from database')
+    error.value = getErrorMessage(err, t('inventory.errors.load'))
   } finally {
     loading.value = false
   }
@@ -347,7 +361,7 @@ const closeForms = () => {
 
 const saveStockIn = async () => {
   if (!stockForm.medicineId) {
-    error.value = 'Please select a medicine'
+    error.value = t('inventory.selectMedicineError')
     return
   }
 
@@ -366,7 +380,7 @@ const saveStockIn = async () => {
     await loadPageData()
   } catch (err) {
     console.error('Error saving stock:', err)
-    error.value = getErrorMessage(err, 'Cannot save stock')
+    error.value = getErrorMessage(err, t('inventory.errors.save'))
   } finally {
     saving.value = false
   }
@@ -391,7 +405,7 @@ const saveAdjustment = async () => {
     await loadPageData()
   } catch (err) {
     console.error('Error updating stock:', err)
-    error.value = getErrorMessage(err, 'Cannot update stock')
+    error.value = getErrorMessage(err, t('inventory.errors.update'))
   } finally {
     saving.value = false
   }

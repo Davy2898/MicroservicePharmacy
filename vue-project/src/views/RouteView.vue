@@ -2,15 +2,15 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Route Management</h2>
-        <p class="page-subtitle">{{ routes.length }} routes in database</p>
+        <h2>{{ t('route.title') }}</h2>
+        <p class="page-subtitle">{{ t('route.subtitle', { count: routes.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Route</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('route.add') }}</button>
     </div>
 
     <div class="toolbar">
-      <input v-model="searchTerm" class="search-input" type="search" placeholder="Search route" />
-      <button class="btn btn-secondary" type="button" @click="fetchRoutes">Refresh</button>
+      <input v-model="searchTerm" class="search-input" type="search" :placeholder="t('route.search')" />
+      <button class="btn btn-secondary" type="button" @click="fetchRoutes">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -19,18 +19,18 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Route Name</th>
-            <th>Description</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('route.name') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="empty-cell">Loading routes...</td>
+            <td colspan="4" class="empty-cell">{{ t('route.loading') }}</td>
           </tr>
           <tr v-else-if="filteredRoutes.length === 0">
-            <td colspan="4" class="empty-cell">No routes found</td>
+            <td colspan="4" class="empty-cell">{{ t('route.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="route in filteredRoutes" :key="route.id">
@@ -38,8 +38,8 @@
               <td class="text-muted">{{ route.description || '-' }}</td>
               <td>{{ route.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(route)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteRoute(route)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(route)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteRoute(route)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -50,29 +50,29 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveRoute">
         <div class="modal-header">
-          <h3>{{ editingRoute ? 'Edit Route' : 'Add Route' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingRoute ? t('route.formEdit') : t('route.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Route Name</span>
+          <span>{{ t('route.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -81,9 +81,9 @@
     <ConfirmDialog
       :open="Boolean(routeToDelete)"
       :busy="deleting"
-      title="Delete route?"
-      message="This route will be permanently removed from the database."
-      item-label="Route"
+      :title="t('route.deleteTitle')"
+      :message="t('route.deleteMessage')"
+      :item-label="t('route.deleteLabel')"
       :item-name="routeToDelete?.name"
       @cancel="routeToDelete = null"
       @confirm="confirmDeleteRoute"
@@ -94,7 +94,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const routes = ref([])
 const loading = ref(false)
@@ -135,7 +138,7 @@ const fetchRoutes = async () => {
     routes.value = response.data
   } catch (err) {
     console.error('Error fetching routes:', err)
-    error.value = getErrorMessage(err, 'Cannot load routes from database')
+    error.value = getErrorMessage(err, t('route.errors.load'))
   } finally {
     loading.value = false
   }
@@ -186,7 +189,7 @@ const saveRoute = async () => {
     await fetchRoutes()
   } catch (err) {
     console.error('Error saving route:', err)
-    error.value = getErrorMessage(err, 'Cannot save route')
+    error.value = getErrorMessage(err, t('route.errors.save'))
   } finally {
     saving.value = false
   }
@@ -208,7 +211,7 @@ const confirmDeleteRoute = async () => {
     await fetchRoutes()
   } catch (err) {
     console.error('Error deleting route:', err)
-    error.value = getErrorMessage(err, 'Cannot delete route')
+    error.value = getErrorMessage(err, t('route.errors.delete'))
   } finally {
     deleting.value = false
   }

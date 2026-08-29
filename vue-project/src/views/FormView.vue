@@ -2,15 +2,15 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Form Management</h2>
-        <p class="page-subtitle">{{ forms.length }} forms in database</p>
+        <h2>{{ t('form.title') }}</h2>
+        <p class="page-subtitle">{{ t('form.subtitle', { count: forms.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Form</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('form.add') }}</button>
     </div>
 
     <div class="toolbar">
-      <input v-model="searchTerm" class="search-input" type="search" placeholder="Search form" />
-      <button class="btn btn-secondary" type="button" @click="fetchForms">Refresh</button>
+      <input v-model="searchTerm" class="search-input" type="search" :placeholder="t('form.search')" />
+      <button class="btn btn-secondary" type="button" @click="fetchForms">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -19,18 +19,18 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Form Name</th>
-            <th>Description</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('form.name') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="empty-cell">Loading forms...</td>
+            <td colspan="4" class="empty-cell">{{ t('form.loading') }}</td>
           </tr>
           <tr v-else-if="filteredForms.length === 0">
-            <td colspan="4" class="empty-cell">No forms found</td>
+            <td colspan="4" class="empty-cell">{{ t('form.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="formItem in filteredForms" :key="formItem.id">
@@ -38,8 +38,8 @@
               <td class="text-muted">{{ formItem.description || '-' }}</td>
               <td>{{ formItem.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(formItem)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteForm(formItem)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(formItem)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteForm(formItem)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -50,29 +50,29 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveForm">
         <div class="modal-header">
-          <h3>{{ editingForm ? 'Edit Form' : 'Add Form' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingForm ? t('form.formEdit') : t('form.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Form Name</span>
+          <span>{{ t('form.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -81,9 +81,9 @@
     <ConfirmDialog
       :open="Boolean(formToDelete)"
       :busy="deleting"
-      title="Delete form?"
-      message="This form will be permanently removed from the database."
-      item-label="Form"
+      :title="t('form.deleteTitle')"
+      :message="t('form.deleteMessage')"
+      :item-label="t('form.deleteLabel')"
       :item-name="formToDelete?.name"
       @cancel="formToDelete = null"
       @confirm="confirmDeleteForm"
@@ -94,7 +94,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const forms = ref([])
 const loading = ref(false)
@@ -135,7 +138,7 @@ const fetchForms = async () => {
     forms.value = response.data
   } catch (err) {
     console.error('Error fetching forms:', err)
-    error.value = getErrorMessage(err, 'Cannot load forms from database')
+    error.value = getErrorMessage(err, t('form.errors.load'))
   } finally {
     loading.value = false
   }
@@ -186,7 +189,7 @@ const saveForm = async () => {
     await fetchForms()
   } catch (err) {
     console.error('Error saving form:', err)
-    error.value = getErrorMessage(err, 'Cannot save form')
+    error.value = getErrorMessage(err, t('form.errors.save'))
   } finally {
     saving.value = false
   }
@@ -208,7 +211,7 @@ const confirmDeleteForm = async () => {
     await fetchForms()
   } catch (err) {
     console.error('Error deleting form:', err)
-    error.value = getErrorMessage(err, 'Cannot delete form')
+    error.value = getErrorMessage(err, t('form.errors.delete'))
   } finally {
     deleting.value = false
   }

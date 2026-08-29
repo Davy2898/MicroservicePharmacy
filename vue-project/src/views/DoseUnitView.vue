@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Dose Unit Management</h2>
-        <p class="page-subtitle">{{ doseUnits.length }} dose units in database</p>
+        <h2>{{ t('doseUnit.title') }}</h2>
+        <p class="page-subtitle">{{ t('doseUnit.subtitle', { count: doseUnits.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Dose Unit</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('doseUnit.add') }}</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search dose unit"
+        :placeholder="t('doseUnit.search')"
       />
-      <button class="btn btn-secondary" type="button" @click="fetchDoseUnits">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="fetchDoseUnits">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,18 +24,18 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Unit</th>
-            <th>Description</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('doseUnit.tableName') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="empty-cell">Loading dose units...</td>
+            <td colspan="4" class="empty-cell">{{ t('doseUnit.loading') }}</td>
           </tr>
           <tr v-else-if="filteredDoseUnits.length === 0">
-            <td colspan="4" class="empty-cell">No dose units found</td>
+            <td colspan="4" class="empty-cell">{{ t('doseUnit.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="unit in filteredDoseUnits" :key="unit.id">
@@ -43,8 +43,8 @@
               <td class="text-muted">{{ unit.description || '-' }}</td>
               <td>{{ unit.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(unit)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteDoseUnit(unit)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(unit)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteDoseUnit(unit)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -55,29 +55,29 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveDoseUnit">
         <div class="modal-header">
-          <h3>{{ editingDoseUnit ? 'Edit Dose Unit' : 'Add Dose Unit' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingDoseUnit ? t('doseUnit.formEdit') : t('doseUnit.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Unit Name</span>
+          <span>{{ t('doseUnit.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -86,9 +86,9 @@
     <ConfirmDialog
       :open="Boolean(doseUnitToDelete)"
       :busy="deleting"
-      title="Delete dose unit?"
-      message="This dose unit will be permanently removed from the database."
-      item-label="Dose unit"
+      :title="t('doseUnit.deleteTitle')"
+      :message="t('doseUnit.deleteMessage')"
+      :item-label="t('doseUnit.deleteLabel')"
       :item-name="doseUnitToDelete?.name"
       @cancel="doseUnitToDelete = null"
       @confirm="confirmDeleteDoseUnit"
@@ -99,7 +99,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const doseUnits = ref([])
 const loading = ref(false)
@@ -144,7 +147,7 @@ const fetchDoseUnits = async () => {
     doseUnits.value = response.data
   } catch (err) {
     console.error('Error fetching dose units:', err)
-    error.value = getErrorMessage(err, 'Cannot load dose units from database')
+    error.value = getErrorMessage(err, t('doseUnit.errors.load'))
   } finally {
     loading.value = false
   }
@@ -199,7 +202,7 @@ const saveDoseUnit = async () => {
     await fetchDoseUnits()
   } catch (err) {
     console.error('Error saving dose unit:', err)
-    error.value = getErrorMessage(err, 'Cannot save dose unit')
+    error.value = getErrorMessage(err, t('doseUnit.errors.save'))
   } finally {
     saving.value = false
   }
@@ -221,7 +224,7 @@ const confirmDeleteDoseUnit = async () => {
     await fetchDoseUnits()
   } catch (err) {
     console.error('Error deleting dose unit:', err)
-    error.value = getErrorMessage(err, 'Cannot delete dose unit')
+    error.value = getErrorMessage(err, t('doseUnit.errors.delete'))
   } finally {
     deleting.value = false
   }

@@ -31,7 +31,7 @@
 
     <!-- Section: Clinical -->
     <div class="nav-section">
-      <span class="section-title">Clinical</span>
+      <span class="section-title">{{ t('nav.clinical') }}</span>
       <router-link to="/visit-list" class="nav-item" active-class="active">
         <span class="icon">➕</span>
         <span>Visit list</span>
@@ -54,48 +54,58 @@
       </router-link>
       <router-link to="/pharmacy" class="nav-item" active-class="active">
         <span class="icon">💊</span>
-        <span>Pharmacy</span>
+        <span>{{ t('nav.pharmacy') }}</span>
       </router-link>
     </div>
 
     <!-- Section: Inventory & Configurations -->
     <div class="nav-section">
-      <span class="section-title">Pharmacy Settings</span>
+      <span class="section-title">{{ t('nav.pharmacySettings') }}</span>
       <router-link to="/inventory" class="nav-item" active-class="active">
         <span class="icon">📦</span>
-        <span>Inventory</span>
+        <span>{{ t('nav.inventory') }}</span>
       </router-link>
       <router-link to="/medicines" class="nav-item" active-class="active">
         <span class="icon">💊</span>
-        <span>Medicines</span>
+        <span>{{ t('nav.medicines') }}</span>
       </router-link>
       <router-link to="/categories" class="nav-item" active-class="active">
         <span class="icon">🏷️</span>
-        <span>Categories</span>
+        <span>{{ t('nav.categories') }}</span>
       </router-link>
       <router-link to="/units" class="nav-item" active-class="active">
         <span class="icon">📏</span>
-        <span>Units</span>
+        <span>{{ t('nav.units') }}</span>
       </router-link>
       <router-link to="/dose-units" class="nav-item" active-class="active">
         <span class="icon">🧪</span>
-        <span>Dose Units</span>
+        <span>{{ t('nav.doseUnits') }}</span>
       </router-link>
       <router-link to="/pharmacy" class="nav-item" active-class="active">
         <span class="icon">🏥</span>
-        <span>Pharmacy</span>
+        <span>{{ t('nav.pharmacy') }}</span>
       </router-link>
       <router-link to="/routes" class="nav-item" active-class="active">
         <span class="icon">🧭</span>
-        <span>Routes</span>
+        <span>{{ t('nav.routes') }}</span>
       </router-link>
       <router-link to="/templates" class="nav-item" active-class="active">
         <span class="icon">🧾</span>
-        <span>Templates</span>
+        <span>{{ t('nav.templates') }}</span>
+      </router-link>
+      <router-link to="/settings" class="nav-item" active-class="active">
+        <span class="icon">⚙</span>
+        <span>{{ t('nav.settings') }}</span>
       </router-link>
     </div>
   </aside>
 </template>
+
+<script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+</script>
 
 <style scoped>
 :root {

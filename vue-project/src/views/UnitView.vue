@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Unit Management</h2>
-        <p class="page-subtitle">{{ units.length }} units in database</p>
+        <h2>{{ t('unit.title') }}</h2>
+        <p class="page-subtitle">{{ t('unit.subtitle', { count: units.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Unit</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('unit.add') }}</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search unit"
+        :placeholder="t('unit.search')"
       />
-      <button class="btn btn-secondary" type="button" @click="fetchUnits">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="fetchUnits">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,20 +24,20 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Unit</th>
-            <th class="code-col">Code</th>
-            <th>Description</th>
-            <th class="default-col">Default</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('unit.tableName') }}</th>
+            <th class="code-col">{{ t('common.code') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="default-col">{{ t('common.default') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="empty-cell">Loading units...</td>
+            <td colspan="6" class="empty-cell">{{ t('unit.loading') }}</td>
           </tr>
           <tr v-else-if="filteredUnits.length === 0">
-            <td colspan="6" class="empty-cell">No units found</td>
+            <td colspan="6" class="empty-cell">{{ t('unit.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="unit in filteredUnits" :key="unit.id">
@@ -46,13 +46,13 @@
               <td class="text-muted">{{ unit.description || '-' }}</td>
               <td>
                 <span class="default-badge" :class="{ active: unit.is_default }">
-                  {{ unit.is_default ? 'Yes' : 'No' }}
+                  {{ unit.is_default ? t('common.yes') : t('common.noValue') }}
                 </span>
               </td>
               <td>{{ unit.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(unit)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteUnit(unit)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(unit)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteUnit(unit)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -63,39 +63,39 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveUnit">
         <div class="modal-header">
-          <h3>{{ editingUnit ? 'Edit Unit' : 'Add Unit' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingUnit ? t('unit.formEdit') : t('unit.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Unit Name</span>
+          <span>{{ t('unit.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Code</span>
+          <span>{{ t('common.code') }}</span>
           <input v-model.trim="form.code" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <label class="checkbox-field">
           <input v-model="form.isDefault" type="checkbox" />
-          <span>Default unit</span>
+          <span>{{ t('unit.defaultUnit') }}</span>
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -104,9 +104,9 @@
     <ConfirmDialog
       :open="Boolean(unitToDelete)"
       :busy="deleting"
-      title="Delete unit?"
-      message="This unit will be permanently removed from the database."
-      item-label="Unit"
+      :title="t('unit.deleteTitle')"
+      :message="t('unit.deleteMessage')"
+      :item-label="t('unit.deleteLabel')"
       :item-name="unitToDelete?.name"
       @cancel="unitToDelete = null"
       @confirm="confirmDeleteUnit"
@@ -117,7 +117,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const units = ref([])
 const loading = ref(false)
@@ -164,7 +167,7 @@ const fetchUnits = async () => {
     units.value = response.data
   } catch (err) {
     console.error('Error fetching units:', err)
-    error.value = getErrorMessage(err, 'Cannot load units from database')
+    error.value = getErrorMessage(err, t('unit.errors.load'))
   } finally {
     loading.value = false
   }
@@ -225,7 +228,7 @@ const saveUnit = async () => {
     await fetchUnits()
   } catch (err) {
     console.error('Error saving unit:', err)
-    error.value = getErrorMessage(err, 'Cannot save unit')
+    error.value = getErrorMessage(err, t('unit.errors.save'))
   } finally {
     saving.value = false
   }
@@ -247,7 +250,7 @@ const confirmDeleteUnit = async () => {
     await fetchUnits()
   } catch (err) {
     console.error('Error deleting unit:', err)
-    error.value = getErrorMessage(err, 'Cannot delete unit')
+    error.value = getErrorMessage(err, t('unit.errors.delete'))
   } finally {
     deleting.value = false
   }

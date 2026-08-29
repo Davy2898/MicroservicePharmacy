@@ -8,6 +8,7 @@ import DoseUnitView from '@/views/DoseUnitView.vue'
 import RouteView from '@/views/RouteView.vue'
 import FormView from '@/views/FormView.vue'
 import TemplateView from '@/views/TemplateView.vue'
+import SettingsView from '@/views/SettingsView.vue'
 import DosageView from '@/views/dosage/DosageView.vue'
 
 const router = createRouter({
@@ -62,6 +63,11 @@ const router = createRouter({
       path: '/templates',
       name: 'templates',
       component: TemplateView
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView
     },
     {
       path: '/dosage',

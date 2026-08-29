@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Medicine Management</h2>
-        <p class="page-subtitle">{{ medicines.length }} medicines in database</p>
+        <h2>{{ t('medicine.title') }}</h2>
+        <p class="page-subtitle">{{ t('medicine.subtitle', { count: medicines.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Medicine</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('medicine.add') }}</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search by name or barcode"
+        :placeholder="t('medicine.search')"
       />
-      <button class="btn btn-secondary" type="button" @click="fetchMedicines">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="fetchMedicines">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,19 +24,19 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th class="number-col">No.</th>
-            <th class="barcode-col">Barcode</th>
-            <th>Medicine</th>
-            <th class="uom-col">UoM</th>
-            <th class="action-col">Action</th>
+            <th class="number-col">{{ t('common.no') }}</th>
+            <th class="barcode-col">{{ t('common.barcode') }}</th>
+            <th>{{ t('medicine.tableName') }}</th>
+            <th class="uom-col">{{ t('common.uom') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="5" class="empty-cell">Loading medicines...</td>
+            <td colspan="5" class="empty-cell">{{ t('medicine.loading') }}</td>
           </tr>
           <tr v-else-if="filteredMedicines.length === 0">
-            <td colspan="5" class="empty-cell">No medicines found</td>
+            <td colspan="5" class="empty-cell">{{ t('medicine.empty') }}</td>
           </tr>
           <tr v-for="(med, index) in filteredMedicines" v-else :key="med.id">
             <td class="number-cell">{{ index + 1 }}</td>
@@ -44,8 +44,8 @@
             <td class="name-cell">{{ med.name }}</td>
             <td>{{ med.uom || '-' }}</td>
             <td class="action-cell">
-              <button class="icon-btn" type="button" @click="openEditForm(med)">Edit</button>
-              <button class="icon-btn danger" type="button" @click="deleteMedicine(med)">Delete</button>
+              <button class="icon-btn" type="button" @click="openEditForm(med)">{{ t('common.edit') }}</button>
+              <button class="icon-btn danger" type="button" @click="deleteMedicine(med)">{{ t('common.delete') }}</button>
             </td>
           </tr>
         </tbody>
@@ -55,29 +55,29 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveMedicine">
         <div class="modal-header">
-          <h3>{{ editingMedicine ? 'Edit Medicine' : 'Add Medicine' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingMedicine ? t('medicine.formEdit') : t('medicine.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Barcode</span>
+          <span>{{ t('common.barcode') }}</span>
           <input v-model.trim="form.barcode" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Medicine Name</span>
+          <span>{{ t('medicine.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>UoM</span>
+          <span>{{ t('common.uom') }}</span>
           <input v-model.trim="form.uom" type="text" placeholder="1 គ្រាប់ / 1 គ្រាប់" />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -86,9 +86,9 @@
     <ConfirmDialog
       :open="Boolean(medicineToDelete)"
       :busy="deleting"
-      title="Delete medicine?"
-      message="This medicine will be permanently removed from the database."
-      item-label="Medicine"
+      :title="t('medicine.deleteTitle')"
+      :message="t('medicine.deleteMessage')"
+      :item-label="t('medicine.deleteLabel')"
       :item-name="medicineToDelete?.name"
       @cancel="medicineToDelete = null"
       @confirm="confirmDeleteMedicine"
@@ -99,7 +99,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const medicines = ref([])
 const loading = ref(false)
@@ -144,7 +147,7 @@ const fetchMedicines = async () => {
     medicines.value = response.data
   } catch (err) {
     console.error('Error fetching medicines:', err)
-    error.value = getErrorMessage(err, 'Cannot load medicines from database')
+    error.value = getErrorMessage(err, t('medicine.errors.load'))
   } finally {
     loading.value = false
   }
@@ -199,7 +202,7 @@ const saveMedicine = async () => {
     await fetchMedicines()
   } catch (err) {
     console.error('Error saving medicine:', err)
-    error.value = getErrorMessage(err, 'Cannot save medicine')
+    error.value = getErrorMessage(err, t('medicine.errors.save'))
   } finally {
     saving.value = false
   }
@@ -221,7 +224,7 @@ const confirmDeleteMedicine = async () => {
     await fetchMedicines()
   } catch (err) {
     console.error('Error deleting medicine:', err)
-    error.value = getErrorMessage(err, 'Cannot delete medicine')
+    error.value = getErrorMessage(err, t('medicine.errors.delete'))
   } finally {
     deleting.value = false
   }

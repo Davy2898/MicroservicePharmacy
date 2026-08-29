@@ -2,15 +2,15 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Medicine Template</h2>
-        <p class="page-subtitle">{{ templates.length }} templates in database</p>
+        <h2>{{ t('template.title') }}</h2>
+        <p class="page-subtitle">{{ t('template.subtitle', { count: templates.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Template</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('template.add') }}</button>
     </div>
 
     <div class="toolbar">
-      <input v-model="searchTerm" class="search-input" type="search" placeholder="Search template" />
-      <button class="btn btn-secondary" type="button" @click="fetchTemplates">Refresh</button>
+      <input v-model="searchTerm" class="search-input" type="search" :placeholder="t('template.search')" />
+      <button class="btn btn-secondary" type="button" @click="fetchTemplates">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -19,21 +19,21 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th class="no-col">No.</th>
-            <th>Template Name</th>
-            <th>Treatment On Disease</th>
-            <th class="type-col">Type</th>
-            <th>Description</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th class="no-col">{{ t('common.no') }}</th>
+            <th>{{ t('template.name') }}</th>
+            <th>{{ t('template.disease') }}</th>
+            <th class="type-col">{{ t('common.type') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="7" class="empty-cell">Loading templates...</td>
+            <td colspan="7" class="empty-cell">{{ t('template.loading') }}</td>
           </tr>
           <tr v-else-if="filteredTemplates.length === 0">
-            <td colspan="7" class="empty-cell">No templates found</td>
+            <td colspan="7" class="empty-cell">{{ t('template.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="template in filteredTemplates" :key="template.id">
@@ -46,8 +46,8 @@
               <td class="text-muted">{{ template.description || '-' }}</td>
               <td>{{ template.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(template)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteTemplate(template)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(template)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteTemplate(template)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -58,18 +58,18 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveTemplate">
         <div class="modal-header">
-          <h3>{{ editingTemplate ? 'Edit Template' : 'Add Template' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingTemplate ? t('template.formEdit') : t('template.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <div class="form-grid">
           <label class="form-field">
-            <span>No.</span>
+            <span>{{ t('common.no') }}</span>
             <input v-model.trim="form.no" type="text" required />
           </label>
 
           <label class="form-field">
-            <span>Type</span>
+            <span>{{ t('common.type') }}</span>
             <select v-model="form.type" required>
               <option value="OPD">OPD</option>
               <option value="IPD">IPD</option>
@@ -78,29 +78,29 @@
         </div>
 
         <label class="form-field">
-          <span>Template Name</span>
+          <span>{{ t('template.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Treatment On Disease</span>
+          <span>{{ t('template.disease') }}</span>
           <input v-model.trim="form.disease" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -109,9 +109,9 @@
     <ConfirmDialog
       :open="Boolean(templateToDelete)"
       :busy="deleting"
-      title="Delete template?"
-      message="This template will be permanently removed from the database."
-      item-label="Template"
+      :title="t('template.deleteTitle')"
+      :message="t('template.deleteMessage')"
+      :item-label="t('template.deleteLabel')"
       :item-name="templateToDelete?.name"
       @cancel="templateToDelete = null"
       @confirm="confirmDeleteTemplate"
@@ -122,7 +122,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const templates = ref([])
 const loading = ref(false)
@@ -166,7 +169,7 @@ const fetchTemplates = async () => {
     templates.value = response.data
   } catch (err) {
     console.error('Error fetching templates:', err)
-    error.value = getErrorMessage(err, 'Cannot load templates from database')
+    error.value = getErrorMessage(err, t('template.errors.load'))
   } finally {
     loading.value = false
   }
@@ -230,7 +233,7 @@ const saveTemplate = async () => {
     await fetchTemplates()
   } catch (err) {
     console.error('Error saving template:', err)
-    error.value = getErrorMessage(err, 'Cannot save template')
+    error.value = getErrorMessage(err, t('template.errors.save'))
   } finally {
     saving.value = false
   }
@@ -252,7 +255,7 @@ const confirmDeleteTemplate = async () => {
     await fetchTemplates()
   } catch (err) {
     console.error('Error deleting template:', err)
-    error.value = getErrorMessage(err, 'Cannot delete template')
+    error.value = getErrorMessage(err, t('template.errors.delete'))
   } finally {
     deleting.value = false
   }

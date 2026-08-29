@@ -2,10 +2,10 @@
   <div class="page-container">
     <div class="header-actions">
       <div>
-        <h2>Category Management</h2>
-        <p class="page-subtitle">{{ categories.length }} categories in database</p>
+        <h2>{{ t('category.title') }}</h2>
+        <p class="page-subtitle">{{ t('category.subtitle', { count: categories.length }) }}</p>
       </div>
-      <button class="btn btn-primary" type="button" @click="openCreateForm">+ Add Category</button>
+      <button class="btn btn-primary" type="button" @click="openCreateForm">{{ t('category.add') }}</button>
     </div>
 
     <div class="toolbar">
@@ -13,9 +13,9 @@
         v-model="searchTerm"
         class="search-input"
         type="search"
-        placeholder="Search category"
+        :placeholder="t('category.search')"
       />
-      <button class="btn btn-secondary" type="button" @click="fetchCategories">Refresh</button>
+      <button class="btn btn-secondary" type="button" @click="fetchCategories">{{ t('common.refresh') }}</button>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
@@ -24,18 +24,18 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th class="order-col">Order</th>
-            <th class="action-col">Action</th>
+            <th>{{ t('common.name') }}</th>
+            <th>{{ t('common.description') }}</th>
+            <th class="order-col">{{ t('common.order') }}</th>
+            <th class="action-col">{{ t('common.action') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="empty-cell">Loading categories...</td>
+            <td colspan="4" class="empty-cell">{{ t('category.loading') }}</td>
           </tr>
           <tr v-else-if="filteredCategories.length === 0">
-            <td colspan="4" class="empty-cell">No categories found</td>
+            <td colspan="4" class="empty-cell">{{ t('category.empty') }}</td>
           </tr>
           <template v-else>
             <tr v-for="cat in filteredCategories" :key="cat.id">
@@ -43,8 +43,8 @@
               <td class="text-muted">{{ cat.description || '-' }}</td>
               <td>{{ cat.order }}</td>
               <td class="action-cell">
-                <button class="icon-btn" type="button" @click="openEditForm(cat)">Edit</button>
-                <button class="icon-btn danger" type="button" @click="deleteCategory(cat)">Delete</button>
+                <button class="icon-btn" type="button" @click="openEditForm(cat)">{{ t('common.edit') }}</button>
+                <button class="icon-btn danger" type="button" @click="deleteCategory(cat)">{{ t('common.delete') }}</button>
               </td>
             </tr>
           </template>
@@ -55,29 +55,29 @@
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal-panel" @submit.prevent="saveCategory">
         <div class="modal-header">
-          <h3>{{ editingCategory ? 'Edit Category' : 'Add Category' }}</h3>
-          <button class="close-btn" type="button" aria-label="Close" @click="closeForm">x</button>
+          <h3>{{ editingCategory ? t('category.formEdit') : t('category.formAdd') }}</h3>
+          <button class="close-btn" type="button" :aria-label="t('common.close')" @click="closeForm">x</button>
         </div>
 
         <label class="form-field">
-          <span>Name</span>
+          <span>{{ t('common.name') }}</span>
           <input v-model.trim="form.name" type="text" required />
         </label>
 
         <label class="form-field">
-          <span>Description</span>
+          <span>{{ t('common.description') }}</span>
           <input v-model.trim="form.description" type="text" />
         </label>
 
         <label class="form-field">
-          <span>Order</span>
+          <span>{{ t('common.order') }}</span>
           <input v-model.number="form.order" type="number" min="0" step="1" required />
         </label>
 
         <div class="modal-actions">
-          <button class="btn btn-secondary" type="button" @click="closeForm">Cancel</button>
+          <button class="btn btn-secondary" type="button" @click="closeForm">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -86,9 +86,9 @@
     <ConfirmDialog
       :open="Boolean(categoryToDelete)"
       :busy="deleting"
-      title="Delete category?"
-      message="This category will be permanently removed from the database."
-      item-label="Category"
+      :title="t('category.deleteTitle')"
+      :message="t('category.deleteMessage')"
+      :item-label="t('category.deleteLabel')"
       :item-name="categoryToDelete?.name"
       @cancel="categoryToDelete = null"
       @confirm="confirmDeleteCategory"
@@ -99,7 +99,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { useI18n } from 'vue-i18n'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
+const { t } = useI18n()
 
 const categories = ref([])
 const loading = ref(false)
@@ -144,7 +147,7 @@ const fetchCategories = async () => {
     categories.value = response.data
   } catch (err) {
     console.error('Error fetching categories:', err)
-    error.value = getErrorMessage(err, 'Cannot load categories from database')
+    error.value = getErrorMessage(err, t('category.errors.load'))
   } finally {
     loading.value = false
   }
@@ -199,7 +202,7 @@ const saveCategory = async () => {
     await fetchCategories()
   } catch (err) {
     console.error('Error saving category:', err)
-    error.value = getErrorMessage(err, 'Cannot save category')
+    error.value = getErrorMessage(err, t('category.errors.save'))
   } finally {
     saving.value = false
   }
@@ -221,7 +224,7 @@ const confirmDeleteCategory = async () => {
     await fetchCategories()
   } catch (err) {
     console.error('Error deleting category:', err)
-    error.value = getErrorMessage(err, 'Cannot delete category')
+    error.value = getErrorMessage(err, t('category.errors.delete'))
   } finally {
     deleting.value = false
   }

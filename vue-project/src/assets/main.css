@@ -10,12 +10,7 @@ body {
   background-color: #f1f5f9;
   color: #334155;
   -webkit-font-smoothing: antialiased;
-}
-
-/* Khmer Font Support */
-body {
-  font-family: 'Kantumruy Pro', system-ui, -apple-system, sans-serif;
-  background-color: #f1f5f9;
+  text-rendering: optimizeLegibility;
 }
 
 /* Modern CSS Variables for Theme Consistency */
